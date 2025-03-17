@@ -1,0 +1,194 @@
+
+CREATE TABLE UserDetails (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    Address NVARCHAR(255),
+    City NVARCHAR(100),
+    Class NVARCHAR(50),
+    College NVARCHAR(100),
+    Country NVARCHAR(100),
+    DOB DATE,
+    MobileNo NVARCHAR(20),
+    Name NVARCHAR(100),
+    State NVARCHAR(100)
+);
+
+
+CREATE TABLE EducationDetails (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    UserId INT,  -- Foreign key to link with UserDetails
+    Class NVARCHAR(50),
+    College NVARCHAR(100),
+    ObtainedMarks FLOAT,
+    TotalMarks FLOAT,
+    Percentage FLOAT,
+    FOREIGN KEY (UserId) REFERENCES UserDetails(Id) ON DELETE CASCADE
+);
+
+
+
+CREATE PROCEDURE SP_EducationDetails
+    @Type INT,
+    @Id INT = NULL,
+    @UserId INT = NULL,
+    @Class NVARCHAR(50) = NULL,
+    @College NVARCHAR(100) = NULL,
+    @ObtainedMarks FLOAT = NULL,
+    @TotalMarks FLOAT = NULL,
+    @Percentage FLOAT = NULL
+AS
+BEGIN
+    DECLARE @Success BIT = 0;
+    DECLARE @Message NVARCHAR(255);
+
+
+    IF @Type = 1
+    BEGIN
+        INSERT INTO EducationDetails (UserId, Class, College, ObtainedMarks, TotalMarks, Percentage)
+        VALUES (@UserId, @Class, @College, @ObtainedMarks, @TotalMarks, @Percentage);
+
+        SET @Success = 1;
+        SET @Message = 'Education details inserted successfully';
+    END
+
+    -- Update Education
+    ELSE IF @Type = 2
+    BEGIN
+        IF EXISTS (SELECT 1 FROM EducationDetails WHERE Id = @Id)
+        BEGIN
+            UPDATE EducationDetails
+            SET Class = @Class,
+                College = @College,
+                ObtainedMarks = @ObtainedMarks,
+                TotalMarks = @TotalMarks,
+                Percentage = @Percentage
+            WHERE Id = @Id;
+
+            SET @Success = 1;
+            SET @Message = 'Education details updated successfully';
+        END
+        ELSE
+        BEGIN
+            SET @Success = 0;
+            SET @Message = 'Education record not found for update';
+        END
+    END
+
+
+    ELSE IF @Type = 3
+    BEGIN
+        IF EXISTS (SELECT 1 FROM EducationDetails WHERE Id = @Id)
+        BEGIN
+            DELETE FROM EducationDetails WHERE Id = @Id;
+
+            SET @Success = 1;
+            SET @Message = 'Education record deleted successfully';
+        END
+        ELSE
+        BEGIN
+            SET @Success = 0;
+            SET @Message = 'Education record not found for deletion';
+        END
+    END
+    ELSE IF @Type = 4
+    BEGIN
+        SELECT * FROM EducationDetails WHERE UserId = @UserId;
+        SET @Success = 1;
+        SET @Message = 'Education data retrieved successfully';
+    END
+
+    SELECT @Success AS Success, @Message AS Message;
+END;
+
+
+CREATE PROCEDURE SP_UserDetails
+    @Type INT,
+    @Id INT = NULL,
+    @Address NVARCHAR(255) = NULL,
+    @City NVARCHAR(100) = NULL,
+    @Country NVARCHAR(100) = NULL,
+    @DOB DATE = NULL,
+    @MobileNo NVARCHAR(20) = NULL,
+    @Name NVARCHAR(100) = NULL,
+    @State NVARCHAR(100) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @Success BIT = 0;
+    DECLARE @Message NVARCHAR(255);
+
+    -- Insert User
+    IF @Type = 1
+    BEGIN
+        INSERT INTO UserDetails (Address, City, Country, DOB, MobileNo, Name, State)
+        VALUES (@Address, @City, @Country, @DOB, @MobileNo, @Name, @State);
+
+        SET @Success = 1;
+        SET @Message = 'User details inserted successfully';
+    END
+
+    -- Update User
+    ELSE IF @Type = 2
+    BEGIN
+        IF EXISTS (SELECT 1 FROM UserDetails WHERE Id = @Id)
+        BEGIN
+            UPDATE UserDetails
+            SET Address = @Address,
+                City = @City,
+                Country = @Country,
+                DOB = @DOB,
+                MobileNo = @MobileNo,
+                Name = @Name,
+                State = @State
+            WHERE Id = @Id;
+
+            SET @Success = 1;
+            SET @Message = 'User details updated successfully';
+        END
+        ELSE
+        BEGIN
+            SET @Success = 0;
+            SET @Message = 'User not found for update';
+        END
+    END
+
+    -- Delete User (Education details deleted automatically due to CASCADE)
+    ELSE IF @Type = 3
+    BEGIN
+        IF EXISTS (SELECT 1 FROM UserDetails WHERE Id = @Id)
+        BEGIN
+            DELETE FROM UserDetails WHERE Id = @Id;
+
+            SET @Success = 1;
+            SET @Message = 'User deleted successfully';
+        END
+        ELSE
+        BEGIN
+            SET @Success = 0;
+            SET @Message = 'User not found for deletion';
+        END
+    END
+
+    -- Select Users
+    ELSE IF @Type = 4
+    BEGIN
+        SELECT * FROM UserDetails;
+        SET @Success = 1;
+        SET @Message = 'User data retrieved successfully';
+    END
+
+    -- Invalid Type Handling
+    ELSE
+    BEGIN
+        SET @Success = 0;
+        SET @Message = 'Invalid Type provided. Use 1 for Insert, 2 for Update, 3 for Delete, and 4 for Select.';
+    END
+
+    -- Return the success status and message
+    SELECT @Success AS Success, @Message AS Message;
+END;
+
+
+
+
+
+SET @NewUserId = SCOPE_IDENTITY();
